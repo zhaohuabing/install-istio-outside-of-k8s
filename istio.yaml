@@ -1,0 +1,103 @@
+# GENERATED FILE. Use with Docker-Compose and consul
+# TO UPDATE, modify files in install/consul/templates and run install/updateVersion.sh
+version: '2'
+services:
+  istio-etcd:
+    #image: quay.io/coreos/etcd:latest
+    image: 172.167.40.20:6666/admin/etcd:3.2.15.2117000
+    network_mode: "host"
+    ports:
+      - "4001:4001"
+      - "2380:2380"
+      - "2379:2379"
+    environment:
+      - SERVICE_IGNORE=1
+    command: ["/usr/local/bin/etcd", "-advertise-client-urls=http://0.0.0.0:2379", "-listen-client-urls=http://0.0.0.0:2379"]
+
+  istio-apiserver:
+    image: gcr.io/google_containers/kube-apiserver-amd64:v1.7.3
+    network_mode: "host"
+    ports:
+      - "8080:8080"
+    privileged: true
+    environment:
+      - SERVICE_IGNORE=1
+    command: ["kube-apiserver", "--etcd-servers", "http://172.167.40.24:2379", "--service-cluster-ip-range", "10.99.0.0/16", "--insecure-port", "8080", "-v", "2", "--insecure-bind-address", "0.0.0.0"]
+
+  istio-pilot:
+    image: gcr.io/istio-release/pilot:1.0.0
+    network_mode: "host"
+    ports:
+      - "15003:15003"
+    command: ["discovery", "-v", "2",
+              "--port", "15003",
+              "--registries", "Consul",
+              "--consulserverURL", "http://172.167.40.24:1102",
+              "--kubeconfig", "/etc/istio/config/kubeconfig"
+              ]
+    volumes:
+      - ./kubeconfig:/etc/istio/config/kubeconfig
+      - ./configmap-istio.yml:/etc/istio/config/mesh
+
+
+  istio-zipkin:
+    image: docker.io/openzipkin/zipkin:latest
+    network_mode: "host"
+    ports:
+      - "9411:9411"
+
+  istio-telemetry:
+    network_mode: "bridge"
+    ports:
+      - "9091:9091"
+      - "39093:9093"
+      - "15004:15004"
+      #- "39091:39091"
+      - "42422:42422"
+    container_name: istio-telemetry
+    volumes:
+      - /home/ubuntu/lb/mixer/istio-telemetry-uds-socket:/sock
+      - ./kubeconfig:/etc/istio/config/kubeconfig
+      - uds-socket:/sock
+    image: gcr.io/istio-release/mixer:1.0.0
+    environment:
+      - SERVICE_IGNORE=1
+    command: 
+      - --address
+      #- tcp://0.0.0.0:39091
+      - unix:///sock/mixer.socket
+      - --configStoreURL=k8s:///etc/istio/config/kubeconfig
+      # - --configDefaultNamespace=istio-system
+      - --trace_zipkin_url=http://172.167.40.24:9411/api/v1/spans
+
+  istio-telemetry-sidecar:
+    image: service-mesh/mesh_sidecar:0.1
+    network_mode: "service:istio-telemetry"
+    # network_mode: "container:istio-telemetry"
+    command:
+      - proxy
+      - --serviceCluster
+      - istio-telemetry
+      # - --serviceregistry Consul
+      - --templateFile
+      - /etc/istio/proxy/envoy_telemetry.yaml.tmpl
+      - --controlPlaneAuthPolicy
+      - NONE 
+      #- "/usr/local/bin/pilot-agent proxy --serviceregistry Consul --serviceCluster istio-telemetry --configPath /var/lib/istio >/tmp/envoy.log"
+    volumes:
+      - uds-socket:/sock
+
+  istio-statsd-prom-bridge:
+    image: docker.io/prom/statsd-exporter:v0.6.0
+    network_mode: "host"
+    ports:
+      - "9102:9102"
+      - "9125:9125"
+    environment:
+      - SERVICE_IGNORE=1
+    #command: ["--statsd.mapping-config=/home/ubuntu/istio_install/statsd.conf"]
+    volumes:
+      - /etc/statsd/mapping.conf:/home/ubuntu/istio_install/statsd.conf
+
+volumes:
+  uds-socket: 

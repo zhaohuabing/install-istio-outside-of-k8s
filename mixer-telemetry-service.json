@@ -1,0 +1,27 @@
+{
+  "Datacenter": "dc1",
+  "Node": "noserver",
+  "Address": "172.168.40.244",
+  "TaggedAddresses": {
+    "lan": "172.168.40.244",
+    "wan": "172.168.40.244"
+  },
+  "NodeMeta": {
+    "protocol": "grpc"
+  },
+  "Service": {
+    "ID": "_telemetry_10.75.8.101_39091",
+    "Service": "telemetry",
+    "Tags": [
+    "\"base\":{\"version\":\"v1.0\",\"protocol\":\"TCP\",\"is_manual\":\"true\",\"visualRange\":\"0\"}",
+    "\"labels\":{\"visualRange\":\"0\"}",
+    "\"lb\":{\"lb_policy\":\"round-robin\"}",
+    "version|",
+    "\"update_time\":\"2018-09-21T15:51:37.770+0800\""
+    ],
+    "Address": "10.75.8.101",
+    "Port": 9091,
+    "ServiceEnableTagOverride": false
+  },
+  "SkipNodeUpdate": false
+}

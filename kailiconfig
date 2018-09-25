@@ -1,0 +1,37 @@
+server:
+  port: 20001
+  credentials:
+    username: admin
+    password: istio
+  static_content_root_directory: /opt/kiali/console
+in_cluster: false
+app_label_name: app
+version_label_name: version
+external_services:
+  istio:
+    url_service_version: http://172.167.40.24:15003/version
+    istio_identity_domain: svc.cluster.local
+    istio_sidecar_annotation: sidecar.istio.io/status
+  prometheus_service_url: http://prometheus.istio-system:9090
+  grafana:
+    display_link: true
+    url: ""
+    service_namespace: istio-system
+    service: grafana
+    workload_dashboard_pattern: Istio%20Workload%20Dashboard
+    service_dashboard_pattern: Istio%20Service%20Dashboard
+    var_namespace: var-namespace
+    var_service: var-service
+    var_workload: var-workload
+  jaeger:
+    service_namespace: istio-system
+    service: jaeger-query
+    service_port: "16686"
+login_token:
+  signing_key:
+  - 107
+  - 105
+  - 97
+  - 108
+  - 105
+  expiration_seconds: 36000

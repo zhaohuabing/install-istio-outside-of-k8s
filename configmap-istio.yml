@@ -1,0 +1,3 @@
+disablePolicyChecks: true 
+
+mixerReportServer: telemetry.service.consul:9091
